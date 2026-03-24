@@ -1,0 +1,89 @@
+<%- include('layout') %>
+
+<div class="card" style="max-width:600px;margin:auto;">
+
+  <h2 style="margin-bottom:25px;">Add New Asset</h2>
+
+  <% if(error) { %>
+    <div style="background:#fee2e2;color:#b91c1c;padding:10px;border-radius:6px;margin-bottom:15px;">
+      <%= error %>
+    </div>
+  <% } %>
+
+  <form action="/add-asset" method="POST">
+
+    <label>Asset Type</label>
+    <select name="type" id="assetType" required class="input">
+      <option value="">Select Type</option>
+      <option value="Laptop">Laptop</option>
+      <option value="Desktop">Desktop</option>
+      <option value="Monitor">Monitor</option>
+      <option value="Accessory">Accessory</option>
+    </select>
+
+    <label>Brand</label>
+    <input type="text" name="brand" placeholder="Enter Brand" class="input">
+
+    <label>Model</label>
+    <input type="text" name="model" placeholder="Enter Model" class="input">
+
+    <div id="serialField">
+      <label>Serial Number</label>
+      <input type="text" name="serial_number" placeholder="Enter Serial Number" class="input">
+    </div>
+
+    <label>Vendor</label>
+    <input type="text" name="vendor" placeholder="Enter Vendor Name" class="input">
+
+    <div id="specSection" style="margin-top:20px;">
+      <h4 style="margin-bottom:10px;">System Specifications</h4>
+
+      <input type="text" name="processor" placeholder="Processor (e.g. i7 10th Gen)" class="input">
+
+      <input type="number" name="ram_gb" placeholder="RAM (GB)" class="input">
+
+      <input type="text" name="storage_type" placeholder="Storage Type (SSD / HDD)" class="input">
+
+      <input type="number" name="storage_gb" placeholder="Storage Size (GB)" class="input">
+
+      <input type="text" name="gpu" placeholder="GPU (Optional)" class="input">
+    </div>
+
+    <button type="submit" class="btn" style="width:100%;margin-top:20px;">
+      Save Asset
+    </button>
+
+  </form>
+</div>
+
+<%- include('footer') %>
+
+<script>
+const typeSelect = document.getElementById('assetType');
+const specSection = document.getElementById('specSection');
+const serialField = document.getElementById('serialField');
+
+function toggleFields() {
+  const type = typeSelect.value;
+
+  if (type === 'Laptop' || type === 'Desktop') {
+    specSection.style.display = 'block';
+    serialField.style.display = 'block';
+  }
+  else if (type === 'Monitor') {
+    specSection.style.display = 'none';
+    serialField.style.display = 'block';
+  }
+  else if (type === 'Accessory') {
+    specSection.style.display = 'none';
+    serialField.style.display = 'none';
+  }
+  else {
+    specSection.style.display = 'none';
+    serialField.style.display = 'block';
+  }
+}
+
+typeSelect.addEventListener('change', toggleFields);
+toggleFields();
+</script>

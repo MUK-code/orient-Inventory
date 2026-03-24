@@ -1,0 +1,31 @@
+<%- include('layout') %>
+
+<h2>Allocation Records</h2>
+
+<table border="1" cellpadding="10">
+  <tr>
+    <th>User</th>
+    <th>Employee ID</th>
+    <th>Department</th>
+    <th>Designation</th>
+    <th>Asset</th>
+    <th>Serial</th>
+    <th>Date</th>
+  </tr>
+
+  <% allocations.forEach(row => { %>
+    <tr>
+      <td><%= row.name %></td>
+      <td><%= row.employee_id %></td>
+      <td><%= row.department %></td>
+      <td><%= row.designation %></td>
+      <td><%= row.type %> - <%= row.brand %> <%= row.model %></td>
+      <td><%= row.serial_number %></td>
+      <td><%= row.allocation_date %></td>
+    </tr>
+  <% }) %>
+
+</table>
+
+<br>
+<a href="/">Back to Dashboard</a>

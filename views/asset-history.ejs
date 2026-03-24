@@ -1,0 +1,23 @@
+<%- include('layout') %>
+
+<h2>Asset History</h2>
+
+<table border="1" cellpadding="10">
+  <tr>
+    <th>User</th>
+    <th>Employee ID</th>
+    <th>Allocation Date</th>
+  </tr>
+
+  <% history.forEach(row => { %>
+    <tr>
+      <td><%= row.name %></td>
+      <td><%= row.employee_id %></td>
+      <td><%= row.allocation_date %></td>
+    </tr>
+  <% }) %>
+
+</table>
+
+<br>
+<a href="/assets">← Back to Assets</a>

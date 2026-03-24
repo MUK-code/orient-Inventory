@@ -1,0 +1,30 @@
+<%- include('layout') %>
+
+<div class="card">
+  <h2>Model Wise Summary</h2>
+
+  <table>
+    <tr>
+      <th>Type</th>
+      <th>Brand</th>
+      <th>Model</th>
+      <th>Total</th>
+      <th>In Stock</th>
+      <th>Allocated</th>
+    </tr>
+
+    <% summary.forEach(row => { %>
+      <tr>
+        <td><%= row.type %></td>
+        <td><%= row.brand %></td>
+        <td><%= row.model %></td>
+        <td><%= row.total %></td>
+        <td style="color:green;"><%= row.in_stock %></td>
+        <td style="color:red;"><%= row.allocated %></td>
+      </tr>
+    <% }) %>
+
+  </table>
+</div>
+
+<%- include('footer') %>

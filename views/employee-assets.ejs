@@ -1,0 +1,51 @@
+<%- include('layout') %>
+
+<h2>Search Employee Assets</h2>
+
+<form method="GET" action="/employee-assets">
+  <input type="text" name="search" placeholder="Enter Name or Employee ID" value="<%= search %>" required>
+  <button type="submit">Search</button>
+</form>
+
+<br>
+
+<% if (results.length > 0) { %>
+
+<table border="1" cellpadding="10">
+  <tr>
+    <th>Name</th>
+    <th>Employee ID</th>
+    <th>Asset</th>
+    <th>Serial</th>
+    <th>Date</th>
+    <th>Action</th>
+  </tr>
+
+  <% results.forEach(row => { %>
+    <tr>
+      <td><%= row.name %></td>
+      <td><%= row.employee_id %></td>
+      <td><%= row.type %> - <%= row.brand %> <%= row.model %></td>
+      <td><%= row.serial_number %></td>
+      <td><%= row.allocation_date %></td>
+
+      <td>
+        <form method="POST" action="/return-asset">
+          <input type="hidden" name="allocation_item_id" value="<%= row.allocation_item_id %>">
+          <input type="hidden" name="asset_id" value="<%= row.asset_id %>">
+          <button type="submit" style="background:red;color:white;">Return</button>
+        </form>
+      </td>
+    </tr>
+  <% }) %>
+
+</table>
+
+<% } else if (search) { %>
+
+<p>No active assets found for this employee.</p>
+
+<% } %>
+
+<br>
+<a href="/">← Back to Dashboard</a>

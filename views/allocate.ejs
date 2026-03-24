@@ -1,0 +1,58 @@
+<%- include('layout') %>
+
+<div class="card" style="max-width:700px;margin:auto;">
+
+  <h2 style="margin-bottom:20px;">Allocate Asset</h2>
+
+  <a href="/assets" class="btn btn-secondary" style="margin-bottom:20px;">← Back to Assets</a>
+
+  <!-- Filter -->
+  <form method="GET" action="/allocate" style="margin-bottom:25px;">
+    <label>Filter by Type</label>
+    <select name="type" onchange="this.form.submit()" class="input">
+      <option value="All" <%= selectedType === 'All' ? 'selected' : '' %>>All</option>
+      <option value="Laptop" <%= selectedType === 'Laptop' ? 'selected' : '' %>>Laptop</option>
+      <option value="Desktop" <%= selectedType === 'Desktop' ? 'selected' : '' %>>Desktop</option>
+      <option value="Monitor" <%= selectedType === 'Monitor' ? 'selected' : '' %>>Monitor</option>
+      <option value="Accessory" <%= selectedType === 'Accessory' ? 'selected' : '' %>>Accessory</option>
+    </select>
+  </form>
+
+  <form method="POST" action="/allocate">
+
+    <h4 style="margin-bottom:15px;">User Information</h4>
+
+    <label>Name</label>
+    <input type="text" name="user_name" placeholder="Enter Name" class="input" required>
+
+    <label>Employee ID</label>
+    <input type="text" name="employee_id" placeholder="Enter Employee ID" class="input" required>
+
+    <label>Department</label>
+    <input type="text" name="department" placeholder="Enter Department" class="input" required>
+
+    <label>Designation</label>
+    <input type="text" name="designation" placeholder="Enter Designation" class="input" required>
+
+    <h4 style="margin-top:25px;margin-bottom:10px;">
+      Select Assets (Ctrl + Click for multiple)
+    </h4>
+
+    <select name="asset_ids" multiple size="6" class="input" style="height:150px;" required>
+      <% assets.forEach(asset => { %>
+        <option value="<%= asset.id %>">
+          <%= asset.type %> | <%= asset.brand %> <%= asset.model %>
+          (SN: <%= asset.serial_number || 'N/A' %>)
+        </option>
+      <% }) %>
+    </select>
+
+    <button type="submit" class="btn" style="width:100%;margin-top:20px;">
+      Allocate Selected Assets
+    </button>
+
+  </form>
+
+</div>
+
+<%- include('footer') %>

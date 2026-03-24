@@ -1,0 +1,73 @@
+<%- include('layout') %>
+
+<h2>Asset List</h2>
+
+<!-- Search -->
+<form method="GET" action="/assets" style="margin-bottom:15px;">
+  <input type="text" name="search" placeholder="Search asset..." value="<%= search %>">
+  <button type="submit">Search</button>
+</form>
+
+<table border="1" cellpadding="10" style="background:white;">
+  <tr>
+    <th>Asset Tag</th>
+    <th>Type</th>
+    <th>Brand</th>
+    <th>Model</th>
+    <th>Serial</th>
+    <th>Status</th>
+    <th>Specs</th>
+    <th>Action</th>
+  </tr>
+
+  <% assets.forEach(asset => { %>
+    <tr>
+      <td><%= asset.asset_tag %></td>
+      <td><%= asset.type %></td>
+      <td><%= asset.brand %></td>
+      <td><%= asset.model %></td>
+      <td><%= asset.serial_number %></td>
+
+      <!-- STATUS COLOR BADGE -->
+      <td>
+        <% if(asset.status === 'In Stock') { %>
+          <span style="color:green;font-weight:bold;">In Stock</span>
+        <% } else { %>
+          <span style="color:red;font-weight:bold;">Allocated</span>
+        <% } %>
+        <a href="/asset-history/<%= asset.id %>">History</a>
+      </td>
+
+      <!-- SPECS -->
+      <td>
+        <% if(asset.processor) { %>
+          <%= asset.processor %> |
+          <%= asset.ram_gb || '-' %>GB |
+          <%= asset.storage_type || '' %> <%= asset.storage_gb || '-' %>GB
+          <% if(asset.gpu) { %> | <%= asset.gpu %> <% } %>
+        <% } else { %>
+          -
+        <% } %>
+      </td>
+
+      <!-- ACTION -->
+      <td>
+        <% if(asset.status === 'In Stock') { %>
+          <a href="/allocate?type=<%= asset.type %>" 
+             style="padding:5px 10px;background:#007bff;color:white;text-decoration:none;border-radius:4px;">
+            Allocate
+          </a>
+        <% } else { %>
+          -
+        <% } %>
+      </td>
+
+    </tr>
+  <% }) %>
+</table>
+
+<br>
+
+<a href="/" style="display:inline-block;padding:8px 15px;background:#444;color:white;text-decoration:none;border-radius:5px;">
+  ← Back to Dashboard
+</a>
