@@ -3,8 +3,17 @@ const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const path = require('path');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
 
 const app = express();
+
+// ================= SESSION =================
+app.use(session({
+  secret: 'inventory-secret',
+  resave: false,
+  saveUninitialized: false
+}));
 
 // ================= DATABASE =================
 const db = mysql.createConnection({
@@ -20,34 +29,75 @@ db.connect(err => {
   else console.log("Connected to MySQL");
 });
 
+// ================= CONFIG =================
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ================= AUTH MIDDLEWARE =================
+function isAuthenticated(req, res, next) {
+  if (req.session.user) return next();
+  res.redirect('/login');
+}
+
+// ================= LOGIN =================
+app.get('/login', (req, res) => {
+  res.render('login', { error: null });
+});
+
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+
+  db.query("SELECT * FROM admin_users WHERE username=?", [username], async (err, result) => {
+
+    if (err) return res.send("DB Error");
+
+    if (result.length === 0) {
+      return res.render('login', { error: "User not found" });
+    }
+
+    const user = result[0];
+    const match = await bcrypt.compare(password, user.password);
+
+    if (match) {
+      req.session.user = user;
+      res.redirect('/');
+    } else {
+      return res.render('login', { error: "Wrong password" }); 
+    }
+  });
+});
+
+// ================= LOGOUT =================
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
+});
+
 // ================= DASHBOARD =================
-app.get('/', (req, res) => {
+app.get('/', isAuthenticated, (req, res) => {
   db.query("SELECT COUNT(*) AS total FROM assets", (err, result) => {
     if (err) return res.send("DB Error");
     res.render('dashboard', { total: result[0].total });
   });
 });
 
-// ================= ADD ASSET PAGE =================
-app.get('/add-asset', (req, res) => {
+// ================= ADD ASSET =================
+app.get('/add-asset', isAuthenticated, (req, res) => {
   res.render('add-asset', { error: null, formData: {} });
 });
 
-app.post('/add-asset', (req, res) => {
+app.post('/add-asset', isAuthenticated, (req, res) => {
 
   const {
     type, brand, model, serial_number, vendor,
     processor, ram_gb, storage_type, storage_gb, gpu
   } = req.body;
 
-  // 🔴 Validation
   if ((type === 'Laptop' || type === 'Desktop' || type === 'Monitor') && !serial_number) {
     return res.render('add-asset', {
-      error: "❌ Serial number is required for this asset type.",
+      error: "❌ Serial number required",
       formData: req.body
     });
   }
@@ -73,11 +123,10 @@ app.post('/add-asset', (req, res) => {
     if (err) {
       if (err.code === 'ER_DUP_ENTRY') {
         return res.render('add-asset', {
-          error: "❌ Serial number already exists!",
+          error: "❌ Serial already exists",
           formData: req.body
         });
       }
-
       return res.send("Insert Error");
     }
 
@@ -86,16 +135,13 @@ app.post('/add-asset', (req, res) => {
 });
 
 // ================= VIEW ASSETS =================
-app.get('/assets', (req, res) => {
+app.get('/assets', isAuthenticated, (req, res) => {
   const search = req.query.search || '';
   const searchValue = `%${search}%`;
 
   db.query(
     `SELECT * FROM assets 
-     WHERE type LIKE ? 
-     OR brand LIKE ? 
-     OR model LIKE ? 
-     OR serial_number LIKE ?`,
+     WHERE type LIKE ? OR brand LIKE ? OR model LIKE ? OR serial_number LIKE ?`,
     [searchValue, searchValue, searchValue, searchValue],
     (err, assets) => {
       if (err) return res.send("DB Error");
@@ -104,11 +150,10 @@ app.get('/assets', (req, res) => {
   );
 });
 
-// ================= SHOW ALLOCATE PAGE =================
-app.get('/allocate', (req, res) => {
+// ================= ALLOCATE =================
+app.get('/allocate', isAuthenticated, (req, res) => {
 
   const type = req.query.type || 'All';
-
   let sql = "SELECT * FROM assets WHERE status='In Stock'";
   let params = [];
 
@@ -119,16 +164,11 @@ app.get('/allocate', (req, res) => {
 
   db.query(sql, params, (err, assets) => {
     if (err) return res.send("DB Error");
-
-    res.render('allocate', { 
-      assets, 
-      selectedType: type 
-    });
+    res.render('allocate', { assets, selectedType: type });
   });
 });
 
-// ================= SAVE ALLOCATION =================
-app.post('/allocate', (req, res) => {
+app.post('/allocate', isAuthenticated, (req, res) => {
 
   const { asset_ids, user_name, employee_id, department, designation } = req.body;
   const assetsArray = Array.isArray(asset_ids) ? asset_ids : [asset_ids];
@@ -149,16 +189,8 @@ app.post('/allocate', (req, res) => {
           const allocationId = allocationResult.insertId;
 
           assetsArray.forEach(assetId => {
-
-            db.query(
-              "INSERT INTO allocation_items (allocation_id, asset_id) VALUES (?, ?)",
-              [allocationId, assetId]
-            );
-
-            db.query(
-              "UPDATE assets SET status='Allocated' WHERE id=?",
-              [assetId]
-            );
+            db.query("INSERT INTO allocation_items (allocation_id, asset_id) VALUES (?, ?)", [allocationId, assetId]);
+            db.query("UPDATE assets SET status='Allocated' WHERE id=?", [assetId]);
           });
 
           res.redirect('/allocations');
@@ -167,15 +199,12 @@ app.post('/allocate', (req, res) => {
     };
 
     if (userResult.length > 0) {
-
       db.query(
         "UPDATE users SET name=?, department=?, designation=? WHERE id=?",
         [user_name, department, designation, userResult[0].id],
         () => proceed(userResult[0].id)
       );
-
     } else {
-
       db.query(
         "INSERT INTO users (name, employee_id, department, designation) VALUES (?, ?, ?, ?)",
         [user_name, employee_id, department, designation],
@@ -188,8 +217,8 @@ app.post('/allocate', (req, res) => {
   });
 });
 
-// ================= VIEW ALLOCATIONS =================
-app.get('/allocations', (req, res) => {
+// ================= ALLOCATIONS =================
+app.get('/allocations', isAuthenticated, (req, res) => {
 
   const sql = `
     SELECT allocations.id,
@@ -215,14 +244,13 @@ app.get('/allocations', (req, res) => {
   });
 });
 
-// ================= EMPLOYEE ASSET SEARCH =================
-app.get('/employee-assets', (req, res) => {
+// ================= EMPLOYEE ASSETS =================
+app.get('/employee-assets', isAuthenticated, (req, res) => {
 
   const search = req.query.search || '';
+  if (!search) return res.render('employee-assets', { results: [], search });
 
-  if (!search) {
-    return res.render('employee-assets', { results: [], search });
-  }
+  const searchValue = `%${search}%`;
 
   const sql = `
     SELECT allocation_items.id AS allocation_item_id,
@@ -244,42 +272,28 @@ app.get('/employee-assets', (req, res) => {
       AND (users.name LIKE ? OR users.employee_id LIKE ?)
   `;
 
-  const searchValue = `%${search}%`;
-
   db.query(sql, [searchValue, searchValue], (err, results) => {
     if (err) return res.send("DB Error");
-
     res.render('employee-assets', { results, search });
   });
 });
 
 // ================= RETURN ASSET =================
-app.post('/return-asset', (req, res) => {
+app.post('/return-asset', isAuthenticated, (req, res) => {
 
   const { allocation_item_id, asset_id } = req.body;
 
-  // 1️⃣ Update asset status
-  db.query(
-    "UPDATE assets SET status='In Stock' WHERE id=?",
-    [asset_id],
-    (err) => {
+  db.query("UPDATE assets SET status='In Stock' WHERE id=?", [asset_id], (err) => {
+    if (err) return res.send("Return Error");
 
-      if (err) return res.send("Return Error");
-
-      // 2️⃣ Remove allocation item (history remains in allocations)
-      db.query(
-        "DELETE FROM allocation_items WHERE id=?",
-        [allocation_item_id],
-        () => {
-          res.redirect('/employee-assets');
-        }
-      );
-    }
-  );
+    db.query("DELETE FROM allocation_items WHERE id=?", [allocation_item_id], () => {
+      res.redirect('/employee-assets');
+    });
+  });
 });
 
 // ================= ASSET HISTORY =================
-app.get('/asset-history/:id', (req, res) => {
+app.get('/asset-history/:id', isAuthenticated, (req, res) => {
 
   const assetId = req.params.id;
 
@@ -296,13 +310,12 @@ app.get('/asset-history/:id', (req, res) => {
 
   db.query(sql, [assetId], (err, results) => {
     if (err) return res.send("DB Error");
-
     res.render('asset-history', { history: results });
   });
 });
 
 // ================= MODEL SUMMARY =================
-app.get('/model-summary', (req, res) => {
+app.get('/model-summary', isAuthenticated, (req, res) => {
 
   const sql = `
     SELECT 
@@ -321,8 +334,9 @@ app.get('/model-summary', (req, res) => {
     if (err) return res.send("DB Error");
     res.render('model-summary', { summary: results });
   });
-
 });
+
+// ================= START SERVER =================
 app.listen(3000, () => {
   console.log("Server running on http://localhost:3000");
 });
