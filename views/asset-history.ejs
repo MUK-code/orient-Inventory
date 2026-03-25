@@ -1,23 +1,41 @@
 <%- include('layout') %>
 
-<h2>Asset History</h2>
+<div class="container mt-4">
+  <h2>Asset History</h2>
 
-<table border="1" cellpadding="10">
-  <tr>
-    <th>User</th>
-    <th>Employee ID</th>
-    <th>Allocation Date</th>
-  </tr>
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>User</th>
+        <th>Employee ID</th>
+        <th>Allocation Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
 
-  <% history.forEach(row => { %>
-    <tr>
-      <td><%= row.name %></td>
-      <td><%= row.employee_id %></td>
-      <td><%= row.allocation_date %></td>
-    </tr>
-  <% }) %>
+    <tbody>
+      <% if (history.length === 0) { %>
+        <tr>
+          <td colspan="4" class="text-center">No history found</td>
+        </tr>
+      <% } %>
 
-</table>
+      <% history.forEach(row => { %>
+        <tr>
+          <td><%= row.name %></td>
+          <td><%= row.employee_id %></td>
+          <td><%= row.allocation_date %></td>
+          <td>
+            <% if (row.status === 'Allocated') { %>
+              <span class="badge bg-danger">Allocated</span>
+            <% } else { %>
+              <span class="badge bg-success">In Stock</span>
+            <% } %>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
 
-<br>
-<a href="/assets">← Back to Assets</a>
+  <a href="/assets" class="btn btn-secondary">← Back</a>
+</div>

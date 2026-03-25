@@ -335,6 +335,31 @@ app.get('/model-summary', isAuthenticated, (req, res) => {
     res.render('model-summary', { summary: results });
   });
 });
+// ================= ASSET HISTORY =================
+app.get('/asset-history/:id', isAuthenticated, (req, res) => {
+
+  const assetId = req.params.id;
+
+  const sql = `
+    SELECT 
+      users.name,
+      users.employee_id,
+      allocations.allocation_date,
+      assets.status
+    FROM allocation_items
+    JOIN allocations ON allocations.id = allocation_items.allocation_id
+    JOIN users ON users.id = allocations.user_id
+    JOIN assets ON assets.id = allocation_items.asset_id
+    WHERE allocation_items.asset_id = ?
+    ORDER BY allocations.allocation_date DESC
+  `;
+
+  db.query(sql, [assetId], (err, results) => {
+    if (err) return res.send("DB Error");
+
+    res.render('asset-history', { history: results });
+  });
+});
 
 // ================= START SERVER =================
 app.listen(3000, () => {
