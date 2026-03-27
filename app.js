@@ -284,15 +284,43 @@ db.query("UPDATE assets SET status='In Stock' WHERE id=?", [asset_id], (err) => 
 app.get('/employee-assets', isAuthenticated, (req, res) => {
 
 const search = req.query.search || '';
-if (!search) return res.render('employee-assets', { results: [], search });
-
 const searchValue = `%${search}%`;
 
-const sql = `SELECT allocation_items.id AS allocation_item_id, users.name, users.employee_id, users.department, users.designation, assets.id AS asset_id, assets.type, assets.brand, assets.model, assets.serial_number, DATE_FORMAT(allocations.allocation_date, '%Y-%m-%d') AS allocation_date FROM users JOIN allocations ON allocations.user_id = users.id JOIN allocation_items ON allocation_items.allocation_id = allocations.id JOIN assets ON assets.id = allocation_items.asset_id WHERE assets.status = 'Allocated' AND (users.name LIKE ? OR users.employee_id LIKE ?)`;
+// If no search term, just render empty tables
+if (!search) {
+  return res.render('employee-assets', { activeResults: [], history: [], search });
+}
 
-db.query(sql, [searchValue, searchValue], (err, results) => {
+// Active (currently allocated) assets for this employee
+const activeSql = `SELECT allocation_items.id AS allocation_item_id, users.name, users.employee_id, users.department, users.designation, assets.id AS asset_id, assets.type, assets.brand, assets.model, assets.serial_number, DATE_FORMAT(allocations.allocation_date, '%Y-%m-%d') AS allocation_date FROM users JOIN allocations ON allocations.user_id = users.id JOIN allocation_items ON allocation_items.allocation_id = allocations.id JOIN assets ON assets.id = allocation_items.asset_id WHERE assets.status = 'Allocated' AND (users.name LIKE ? OR users.employee_id LIKE ?)`;
+
+db.query(activeSql, [searchValue, searchValue], (err, activeResults) => {
 if (err) return res.send("DB Error");
-res.render('employee-assets', { results, search });
+
+  // Full history (allocated + returned) for this employee
+  const historySql = `
+    SELECT
+      ah.id,
+      u.name,
+      u.employee_id,
+      a.id AS asset_id,
+      a.type,
+      a.brand,
+      a.model,
+      a.serial_number,
+      DATE_FORMAT(ah.action_date, '%Y-%m-%d') AS action_date,
+      ah.action_type
+    FROM asset_history ah
+    LEFT JOIN users u ON u.id = ah.user_id
+    LEFT JOIN assets a ON a.id = ah.asset_id
+    WHERE (u.name LIKE ? OR u.employee_id LIKE ?)
+    ORDER BY ah.action_date DESC
+  `;
+
+  db.query(historySql, [searchValue, searchValue], (err2, historyResults) => {
+    if (err2) return res.send("DB Error");
+    res.render('employee-assets', { activeResults, history: historyResults, search });
+  });
 });
 });
 

@@ -21,14 +21,7 @@ module.exports = (db) => {
       });
     });
   });
-const express = require("express");
-const fs = require('fs');
-const path = require('path');
-
-module.exports = (db) => {
-  const router = express.Router(); 
-  const puppeteer = require("puppeteer");
-
+  
   // TEST route
   router.get("/test", (req, res) => {
     res.send("Reports working ✅");

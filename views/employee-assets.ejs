@@ -9,7 +9,10 @@
 
 <br>
 
-<% if (results.length > 0) { %>
+<!-- Active / currently allocated assets -->
+<h3>Active Assets</h3>
+
+<% if (activeResults && activeResults.length > 0) { %>
 
 <table border="1" cellpadding="10">
   <tr>
@@ -21,7 +24,7 @@
     <th>Action</th>
   </tr>
 
-  <% results.forEach(row => { %>
+  <% activeResults.forEach(row => { %>
     <tr>
       <td><%= row.name %></td>
       <td><%= row.employee_id %></td>
@@ -44,6 +47,50 @@
 <% } else if (search) { %>
 
 <p>No active assets found for this employee.</p>
+
+<% } %>
+
+<br>
+
+<!-- Full history: allocated + returned -->
+<h3>Asset History</h3>
+
+<% if (history && history.length > 0) { %>
+
+<table border="1" cellpadding="10">
+  <tr>
+    <th>Name</th>
+    <th>Employee ID</th>
+    <th>Asset</th>
+    <th>Serial</th>
+    <th>Date</th>
+    <th>Action</th>
+  </tr>
+
+  <% history.forEach(row => { %>
+    <tr>
+      <td><%= row.name %></td>
+      <td><%= row.employee_id %></td>
+      <td><%= row.type %> - <%= row.brand %> <%= row.model %></td>
+      <td><%= row.serial_number %></td>
+      <td><%= row.action_date %></td>
+      <td>
+        <% if (row.action_type === 'allocated') { %>
+          Allocated
+        <% } else if (row.action_type === 'returned') { %>
+          Returned
+        <% } else { %>
+          <%= row.action_type %>
+        <% } %>
+      </td>
+    </tr>
+  <% }) %>
+
+</table>
+
+<% } else if (search) { %>
+
+<p>No history found for this employee.</p>
 
 <% } %>
 
