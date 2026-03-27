@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Allocation Report</title>
+  <title>In-Stock Assets Report</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
@@ -9,10 +9,11 @@
 
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="m-0">Allocation Report</h2>
+    <h2 class="m-0">In-Stock Assets</h2>
     <div>
-      <input type="text" id="search" class="form-control d-inline-block me-2" style="width:260px;" placeholder="Search user, tag, brand...">
+      <input type="text" id="search" class="form-control d-inline-block me-2" style="width:260px;" placeholder="Search type, brand, model, serial...">
       <button id="exportPdf" class="btn btn-primary">Export PDF</button>
+      <button id="exportCsv" class="btn btn-secondary">Export CSV</button>
     </div>
   </div>
 
@@ -20,14 +21,12 @@
     <table class="table table-hover align-middle">
       <thead class="table-dark">
         <tr>
-          <th>User</th>
-          <th>Emp ID</th>
-          <th>Department</th>
           <th>Asset Tag</th>
           <th>Type</th>
           <th>Brand</th>
           <th>Model</th>
-          <th>Date</th>
+          <th>Serial</th>
+          <th>Vendor</th>
         </tr>
       </thead>
       <tbody id="data"></tbody>
@@ -38,11 +37,12 @@
 <script>
 let allData = [];
 
-  const searchInput = document.getElementById('search');
-const exportBtn = document.getElementById('exportPdf');
+const searchInput = document.getElementById('search');
+const exportPdf = document.getElementById('exportPdf');
+const exportCsv = document.getElementById('exportCsv');
 
 async function loadData(q = '') {
-  const url = q ? `/api/reports/allocations?search=${encodeURIComponent(q)}` : '/api/reports/allocations';
+  const url = q ? `/api/reports/in-stock?search=${encodeURIComponent(q)}` : '/api/reports/in-stock';
   const res = await fetch(url);
   const data = await res.json();
   allData = data;
@@ -53,38 +53,42 @@ function render(data) {
   const tbody = document.getElementById('data');
   tbody.innerHTML = data.map(row => `
     <tr>
-      <td>${escapeHtml(row.user)}</td>
-      <td>${escapeHtml(row.employee_id)}</td>
-      <td>${escapeHtml(row.department)}</td>
       <td>${escapeHtml(row.asset_tag)}</td>
       <td>${escapeHtml(row.type)}</td>
       <td>${escapeHtml(row.brand)}</td>
       <td>${escapeHtml(row.model)}</td>
-      <td>${escapeHtml(row.allocation_date)}</td>
+      <td>${escapeHtml(row.serial_number)}</td>
+      <td>${escapeHtml(row.vendor)}</td>
     </tr>
   `).join('');
 }
 
-function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+function escapeHtml(s){ return (s||'').toString().replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
 
 searchInput.addEventListener('input', debounce(async () => {
   await loadData(searchInput.value.trim());
 }, 250));
 
-exportBtn.addEventListener('click', async () => {
+exportPdf.addEventListener('click', async () => {
   const q = searchInput.value.trim();
-  const url = q ? `/api/reports/allocations/pdf?search=${encodeURIComponent(q)}` : '/api/reports/allocations/pdf';
+  const url = q ? `/api/reports/in-stock/pdf?search=${encodeURIComponent(q)}` : '/api/reports/in-stock/pdf';
   const res = await fetch(url);
   if (!res.ok) return alert('PDF generation failed');
   const blob = await res.blob();
   const urlBlob = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = urlBlob;
-  a.download = 'allocations-report.pdf';
+  a.download = 'in-stock.pdf';
   document.body.appendChild(a);
   a.click();
   a.remove();
   window.URL.revokeObjectURL(urlBlob);
+});
+
+exportCsv.addEventListener('click', () => {
+  const q = searchInput.value.trim();
+  const url = q ? `/api/reports/in-stock/csv?search=${encodeURIComponent(q)}` : '/api/reports/in-stock/csv';
+  window.open(url, '_blank');
 });
 
 function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }

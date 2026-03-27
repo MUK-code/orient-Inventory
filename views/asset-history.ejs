@@ -8,8 +8,8 @@
       <tr>
         <th>User</th>
         <th>Employee ID</th>
-        <th>Allocation Date</th>
-        <th>Status</th>
+        <th>Date</th>
+        <th>Action</th>
       </tr>
     </thead>
 
@@ -24,12 +24,14 @@
         <tr>
           <td><%= row.name %></td>
           <td><%= row.employee_id %></td>
-          <td><%= row.allocation_date %></td>
+          <td><%= row.action_date %></td>
           <td>
-            <% if (row.status === 'Allocated') { %>
+            <% if (row.action_type === 'allocated') { %>
               <span class="badge bg-danger">Allocated</span>
+            <% } else if (row.action_type === 'returned') { %>
+              <span class="badge bg-success">Returned</span>
             <% } else { %>
-              <span class="badge bg-success">In Stock</span>
+              <span class="badge bg-secondary"><%= row.action_type %></span>
             <% } %>
           </td>
         </tr>

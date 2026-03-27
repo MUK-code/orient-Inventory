@@ -9,6 +9,13 @@
 
 <div class="container mt-4">
   <h2>Return Report</h2>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <input type="text" id="search" class="form-control d-inline-block me-2" style="width:260px;" placeholder="Search user, tag, brand...">
+      <button id="exportPdf" class="btn btn-primary">Export PDF</button>
+      <button id="exportCsv" class="btn btn-secondary">Export CSV</button>
+    </div>
+  </div>
 
   <table class="table table-bordered table-striped">
     <thead class="table-dark">
@@ -27,25 +34,64 @@
 </div>
 
 <script>
-fetch("/api/reports/returns")
-  .then(res => res.json())
-  .then(data => {
-    let html = "";
-    data.forEach(row => {
-      html += `
-        <tr>
-          <td>${row.user}</td>
-          <td>${row.employee_id}</td>
-          <td>${row.department}</td>
-          <td>${row.asset_tag}</td>
-          <td>${row.type}</td>
-          <td>${row.return_date}</td>
-          <td>${row.condition_on_return}</td>
-        </tr>
-      `;
-    });
-    document.getElementById("data").innerHTML = html;
+let allData = [];
+const searchInput = document.getElementById('search');
+const exportPdf = document.getElementById('exportPdf');
+const exportCsv = document.getElementById('exportCsv');
+
+async function loadData(q=''){
+  const url = q ? `/api/reports/returns?search=${encodeURIComponent(q)}` : '/api/reports/returns';
+  const res = await fetch(url);
+  const data = await res.json();
+  allData = data;
+  render(data);
+}
+
+function render(data){
+  let html = '';
+  data.forEach(row => {
+    html += `
+      <tr>
+        <td>${escapeHtml(row.user)}</td>
+        <td>${escapeHtml(row.employee_id)}</td>
+        <td>${escapeHtml(row.department)}</td>
+        <td>${escapeHtml(row.asset_tag)}</td>
+        <td>${escapeHtml(row.type)}</td>
+        <td>${escapeHtml(row.return_date)}</td>
+        <td>${escapeHtml(row.condition_on_return)}</td>
+      </tr>
+    `;
   });
+  document.getElementById('data').innerHTML = html;
+}
+
+function escapeHtml(s){ return (s||'').toString().replace(/[&<>'\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+searchInput.addEventListener('input', debounce(async () => { await loadData(searchInput.value.trim()); }, 250));
+
+exportPdf.addEventListener('click', async () => {
+  const q = searchInput.value.trim();
+  const url = q ? `/api/reports/returns/pdf?search=${encodeURIComponent(q)}` : '/api/reports/returns/pdf';
+  const res = await fetch(url);
+  if (!res.ok) return alert('PDF generation failed');
+  const blob = await res.blob();
+  const urlBlob = window.URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = urlBlob; a.download = 'returns.pdf'; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(urlBlob);
+});
+
+exportCsv.addEventListener('click', () => {
+  const q = searchInput.value.trim();
+  const url = q ? `/api/reports/returns/csv?search=${encodeURIComponent(q)}` : '/api/reports/returns/csv';
+  window.open(url, '_blank');
+});
+
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+// pre-fill search if query param provided
+const params = new URLSearchParams(window.location.search);
+if (params.get('search')) searchInput.value = params.get('search');
+
+loadData(searchInput.value.trim());
 </script>
 
 </body>

@@ -38,7 +38,7 @@
       Select Assets (Ctrl + Click for multiple)
     </h4>
 
-    <select name="asset_ids" multiple size="6" class="input" style="height:150px;" required>
+    <select name="asset_ids[]" multiple size="6" class="input" style="height:150px;" required>
       <% assets.forEach(asset => { %>
         <option value="<%= asset.id %>">
           <%= asset.type %> | <%= asset.brand %> <%= asset.model %>
